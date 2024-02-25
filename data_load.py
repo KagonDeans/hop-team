@@ -56,20 +56,23 @@ cbsa['zipcodes'] = fix_zipcode(cbsa['ZIP'])
 
 #read the npi data in chunk, filter them by some conditions and then write to sql.
 db = sqlite3.connect('data/npi.sqlite')
-# for chunk in pd.read_csv('data/DocGraph_Hop_Teaming/DocGraph_Hop_Teaming_2018.csv', 
-#                               chunksize = 10000):
-#     chunk = chunk[chunk['transaction_count']>50]
-#     chunk = chunk[chunk['average_day_wait']<50]
-#     chunk.to_sql('npi', 
-#                 db, 
-#                 if_exists = 'append', 
-#                 index = False)  
+for chunk in pd.read_csv('data/DocGraph_Hop_Teaming/DocGraph_Hop_Teaming_2018.csv', 
+                              chunksize = 10000):
+    chunk = chunk[chunk['transaction_count']>50]
+    chunk = chunk[chunk['average_day_wait']<50]
+    chunk.to_sql('npi', 
+                db, 
+                if_exists = 'append', 
+                index = False)  
+    
+db.execute('CREATE INDEX from_npi ON npi(from_npi)')
+db.close()
 
 
 
 # load the nppes data to sqlite database
 
-# db = sqlite3.connect('data/npi.sqlite')
+db = sqlite3.connect('data/npi.sqlite')
 for chunk in pd.read_csv('data/NPPES_Data_Dissemination_February_2024/npidata_pfile_20050523-20240211.csv', 
                               chunksize = 10000):
     chunk_taxonomy = add_taxonomy(chunk)
@@ -94,5 +97,6 @@ for chunk in pd.read_csv('data/NPPES_Data_Dissemination_February_2024/npidata_pf
                 db, 
                 if_exists = 'append', 
                 index = False)  
-    
+
+db.execute('CREATE INDEX NPI ON nppes(NPI)')
 db.close()
