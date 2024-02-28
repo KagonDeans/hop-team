@@ -34,13 +34,23 @@ def Convert_strings_to_nan(value):
     except ValueError:
         return np.nan
 
+# def fix_zipcode(series):
+#     # fill na with zeroes
+#     #change to int so the zeroes at the end gets removed
+#     # then change to strings and use zfill to add leading zeroes
+#     series = series.fillna(0).astype(float).astype(int).astype(str).str.zfill(5)
+#     # now i can split the strings at 5th item
+#     return series.str[:5]
+
+# New Function that takes care of the 8 digit zipcodes
 def fix_zipcode(series):
-    # fill na with zeroes
-    #change to int so the zeroes at the end gets removed
-    # then change to strings and use zfill to add leading zeroes
-    series = series.fillna(0).astype(float).astype(int).astype(str).str.zfill(5)
+    series = pd.to_numeric(series)
+    series = series.fillna(0)
+    # create a new series with zipcodes
+    new_series = series.apply(lambda x : str(int(x)).zfill(9) if len(str(int(x)))>5 else str(x).zfill(5))    
     # now i can split the strings at 5th item
-    return series.str[:5]
+    return new_series.str[:5]
+
 
 
 columns_to_keep = ['NPI', 
@@ -95,11 +105,9 @@ cbsa = pd.read_csv('data/ZIP_CBSA.csv')
 taxonomy_code_classification =  pd.read_csv('data/nucc_taxonomy_240.csv')
 
 #fix zipcodes in cbsa data
-cbsa['zipcodes'] = fix_zipcode(cbsa['ZIP'])
 
-
-
-
+# do this manually because it is simpler.
+cbsa['zipcodes'] = cbsa['ZIP'].apply(lambda x : str(x).zfill(9) if len(str(x))>5 else str(x).zfill(5)).str[:5]
 
 #read the npi data in chunk, filter them by some conditions and then write to sql.
 db = sqlite3.connect('data/npi.sqlite')
@@ -120,7 +128,8 @@ db.close()
 # load the nppes data to sqlite database
 
 db = sqlite3.connect('data/npi.sqlite')
-for chunk in pd.read_csv('data/NPPES_Data_Dissemination_February_2024/npidata_pfile_20050523-20240211.csv', 
+for chunk in pd.read_csv('data/NPPES_Data_Dissemination_February_2024/npidata_pfile_20050523-20240211.csv',
+                         low_memory=False, 
                           usecols= columns_to_keep,
                               chunksize = 10000):
     chunk_taxonomy = add_taxonomy(chunk)
@@ -129,10 +138,9 @@ for chunk in pd.read_csv('data/NPPES_Data_Dissemination_February_2024/npidata_pf
                             how = 'left',
                             left_on = 'Taxonomy_Code',
                             right_index = True)
-    chunk_merged['Provider Business Practice Location Address Postal Code'] = chunk_merged['Provider Business Practice Location Address Postal Code'].apply(Convert_strings_to_nan)
-    chunk_merged['zipcodes']=fix_zipcode(
-        chunk_merged['Provider Business Practice Location Address Postal Code']
-        )
+    # chunk_merged['Provider Business Practice Location Address Postal Code'] = chunk_merged['Provider Business Practice Location Address Postal Code'].apply(Convert_strings_to_nan)
+    chunk_merged['zipcodes'] = fix_zipcode(chunk_merged['Provider Business Practice Location Address Postal Code'])
+    
     chunk_merged_cbsa = pd.merge(left = chunk_merged, 
          right = cbsa[['zipcodes','CBSA']].set_index('zipcodes'), 
          how = 'left',
@@ -146,5 +154,5 @@ for chunk in pd.read_csv('data/NPPES_Data_Dissemination_February_2024/npidata_pf
                 if_exists = 'append', 
                 index = False)  
 
-db.execute('CREATE INDEX NPI ON nppes(NPI)')
+db.execute('CREATE INDEX nppes_npi ON nppes(NPI)')
 db.close()
