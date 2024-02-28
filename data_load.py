@@ -43,6 +43,53 @@ def fix_zipcode(series):
     return series.str[:5]
 
 
+columns_to_keep = ['NPI', 
+                   'Entity Type Code', 
+                   'Provider Organization Name (Legal Business Name)',
+                   'Provider Last Name (Legal Name)',
+                    'Provider First Name',
+                    'Provider Middle Name',
+                    'Provider Name Prefix Text',
+                    'Provider Name Suffix Text',
+                    'Provider Credential Text',       
+                    'Provider First Line Business Practice Location Address',
+                    'Provider Second Line Business Practice Location Address',
+                    'Provider Business Practice Location Address City Name',
+                    'Provider Business Practice Location Address State Name',
+                    'Provider Business Practice Location Address Postal Code',
+                    "Healthcare Provider Taxonomy Code_1",
+                    "Healthcare Provider Primary Taxonomy Switch_1",
+                    "Healthcare Provider Taxonomy Code_2",
+                    "Healthcare Provider Primary Taxonomy Switch_2",
+                    "Healthcare Provider Taxonomy Code_3",
+                    "Healthcare Provider Primary Taxonomy Switch_3",
+                    "Healthcare Provider Taxonomy Code_4",
+                    "Healthcare Provider Primary Taxonomy Switch_4",
+                    "Healthcare Provider Taxonomy Code_5",
+                    "Healthcare Provider Primary Taxonomy Switch_5",
+                    "Healthcare Provider Taxonomy Code_6",
+                    "Healthcare Provider Primary Taxonomy Switch_6",
+                    "Healthcare Provider Taxonomy Code_7",
+                    "Healthcare Provider Primary Taxonomy Switch_7",
+                    "Healthcare Provider Taxonomy Code_8",
+                    "Healthcare Provider Primary Taxonomy Switch_8",
+                    "Healthcare Provider Taxonomy Code_9",
+                    "Healthcare Provider Primary Taxonomy Switch_9",
+                    "Healthcare Provider Taxonomy Code_10",
+                    "Healthcare Provider Primary Taxonomy Switch_10",
+                    "Healthcare Provider Taxonomy Code_11",
+                    "Healthcare Provider Primary Taxonomy Switch_11",
+                    "Healthcare Provider Taxonomy Code_12",
+                    "Healthcare Provider Primary Taxonomy Switch_12",
+                    "Healthcare Provider Taxonomy Code_13",
+                    "Healthcare Provider Primary Taxonomy Switch_13",
+                    "Healthcare Provider Taxonomy Code_14",
+                    "Healthcare Provider Primary Taxonomy Switch_14",
+                    "Healthcare Provider Taxonomy Code_15",
+                    "Healthcare Provider Primary Taxonomy Switch_15"
+                    ]
+
+
 #load files
 cbsa = pd.read_csv('data/ZIP_CBSA.csv')
 taxonomy_code_classification =  pd.read_csv('data/nucc_taxonomy_240.csv')
@@ -74,6 +121,7 @@ db.close()
 
 db = sqlite3.connect('data/npi.sqlite')
 for chunk in pd.read_csv('data/NPPES_Data_Dissemination_February_2024/npidata_pfile_20050523-20240211.csv', 
+                          usecols= columns_to_keep,
                               chunksize = 10000):
     chunk_taxonomy = add_taxonomy(chunk)
     chunk_merged = pd.merge(left = chunk_taxonomy, 
